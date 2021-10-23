@@ -1,5 +1,6 @@
 #import libraries
 import pygame
+import math
 
 #initialize pygame
 pygame.init()
@@ -18,33 +19,89 @@ FPS = 60
 
 #load images
 bg = pygame.image.load('img/bg.png').convert_alpha()
+
 #castle image
 castle_image_100 = pygame.image.load('img/castle/castle_100.png').convert_alpha()
 
+#bullet image
+bullet_img = pygame.image.load('img/bullet.png').convert_alpha()
+b_w = bullet_img.get_width()
+b_h = bullet_img.get_height()
+bullet_img = pygame.transform.scale(bullet_img, (int(b_w * 0.075), int(b_h * 0.075))) #scalling the bullet image to small
+
+#define colors
+WHITE = (255, 255, 255)
 
 #castle class
 class Castle():
     def __init__(self, image100, x, y, scale):
         self.health = 1000
         self.max_health = self.health
+        self.fired = False
 
         width = image100.get_width()
         height = image100.get_height()
 
-        self.image100 = pygame.transform.scale(image100, (int(width * scale), int(height * scale)))
+        self.image100 = pygame.transform.scale(image100, (int(width * scale), int(height * scale))) 
         self.rect = self.image100.get_rect()
         self.rect.x = x
         self.rect.y = y
 
+
+    def shoot(self):
+        pos = pygame.mouse.get_pos()
+        #print(pos)
+        x_dist = pos[0] - self.rect.midleft[0] #x coordinate of mouse position - x coordinate of castle mid position
+        y_dist = -(pos[1] - self.rect.midleft[1]) #y coordinate of mouse position - y coordinate of castle mid position
+        self.angle = math.degrees(math.atan2(y_dist, x_dist)) #converting radians to degrees
+        #print(self.angle)
+        #get mouse click
+        if pygame.mouse.get_pressed()[0] and self.fired == False:
+            self.fired = True
+            bullet = Bullet(bullet_img, self.rect.midleft[0], self.rect.midleft[1], self.angle)
+            bullet_group.add(bullet)
+        #pygame.draw.line(screen, WHITE, (self.rect.midleft[0], self.rect.midleft[1]),(pos)) #start this line at midleft point of rectangle
+        
+        #reset mouseclick
+        if pygame.mouse.get_pressed()[0] == False:
+            self.fired = False
 
     def draw(self):
         self.image = self.image100
 
         screen.blit(self.image, self.rect)  
 
+
+#bullet class
+class Bullet(pygame.sprite.Sprite):
+     def __init__(self, image, x, y, angle):
+         pygame.sprite.Sprite.__init__(self)
+         self.image = image
+         self.rect = self.image.get_rect() #generate rectangle from that image
+         self.rect.x = x
+         self.rect.y = y
+         self.angle = math.radians(angle) #convert input angle to radians
+         self.speed = 10
+         #calculate the horizontal and vertical speeds based on the angle
+         self.dx = math.cos(self.angle) * self.speed # dx = changes in x direction , based on the angle
+         self.dy = -(math.sin(self.angle) * self.speed) # dy = changes in y direction , based on the angle
+  
+     def update(self):
+         #check if bullet has gone of the screen
+         if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH or self.rect.bottom < 0 or self.rect.top > SCREEN_HEIGHT:
+             self.kill()
+
+         #move bullet
+         self.rect.x += self.dx
+         self.rect.y += self.dy
+
+     
 #create castle
 castle = Castle(castle_image_100, SCREEN_WIDTH - 250, SCREEN_HEIGHT - 300, 0.2) 
 # parameters are castle image, castle image postions and 20% pic of castle image
+
+#create groups
+bullet_group = pygame.sprite.Group()
 
 #game loop
 run = True
@@ -56,6 +113,12 @@ while run:
 
     #draw castle
     castle.draw()
+    castle.shoot()
+
+    #draw bullets
+    bullet_group.update()
+    bullet_group.draw(screen)
+    print(len(bullet_group))
 
     #event handler 
     for event in pygame.event.get():
