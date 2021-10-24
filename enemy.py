@@ -7,8 +7,8 @@ class Enemy(pygame.sprite.Sprite):
 		self.alive = True
 		self.speed = speed
 		self.health = health
-		#self.last_attack = pygame.time.get_ticks()
-		#self.attack_cooldown = 1000
+		self.last_attack = pygame.time.get_ticks()
+		self.attack_cooldown = 1000
 		self.animation_list = animation_list
 		self.frame_index = 0
 		self.action = 0 #0: walk, 1: attack, 2: death
@@ -27,10 +27,6 @@ class Enemy(pygame.sprite.Sprite):
 			if pygame.sprite.spritecollide(self, bullet_group, True):
 				#print('hit')
 				#lower enemy health
-				self.health -= 25
-
-			if pygame.sprite.spritecollide(self, bullet_group, True):
-				#lower enemy health
 				self.health -= 25	
 
 			#check if enemy has reached the castle 
@@ -42,6 +38,17 @@ class Enemy(pygame.sprite.Sprite):
 			if self.action == 0 :
 				#update rectangle position
 				self.rect.x += self.speed
+
+			#attack
+			if self.action == 1:
+                #check if enough time has passed since the last attack
+				if pygame.time.get_ticks() - self.last_attack > self.attack_cooldown:
+					target.health -= 25
+					if target.health < 0:
+						target.health = 0
+					#print(target.health)
+					self.last_attack = pygame.time.get_ticks()
+					
 
 			#check if health has drpped to zero
 			if self.health <= 0:
@@ -56,7 +63,7 @@ class Enemy(pygame.sprite.Sprite):
 		self.update_animation()
 
 		#draw image on screen
-		pygame.draw.rect(surface, (255, 255, 255), self.rect, 1)
+		#pygame.draw.rect(surface, (255, 255, 255), self.rect, 1)
 		surface.blit(self.image, (self.rect.x - 10, self.rect.y - 15))
 
 
