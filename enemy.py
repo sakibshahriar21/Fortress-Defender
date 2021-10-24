@@ -11,21 +11,53 @@ class Enemy(pygame.sprite.Sprite):
 		#self.attack_cooldown = 1000
 		self.animation_list = animation_list
 		self.frame_index = 0
-		self.action = 0#0: walk, 1: attack, 2: death
+		self.action = 0 #0: walk, 1: attack, 2: death
 		self.update_time = pygame.time.get_ticks()
 
 		#select starting image
 		self.image = self.animation_list[self.action][self.frame_index]
-		self.rect = self.image.get_rect()
+		#self.rect = self.image.get_rect()
+		self.rect = pygame.Rect(0, 0, 25, 40) #custom rectangle, as the images have bigger border
 		self.rect.center = (x, y)
 
 
-	def update(self, surface):
+	def update(self, surface, target, bullet_group):
+		if self.alive: 
+			#check for collision with bullets
+			if pygame.sprite.spritecollide(self, bullet_group, True):
+				#print('hit')
+				#lower enemy health
+				self.health -= 25
+
+			if pygame.sprite.spritecollide(self, bullet_group, True):
+				#lower enemy health
+				self.health -= 25	
+
+			#check if enemy has reached the castle 
+			if self.rect.right > target.rect.left:
+				#print('reached castle!')
+				self.update_action(1)  #attack
+		
+			#move enemy
+			if self.action == 0 :
+				#update rectangle position
+				self.rect.x += self.speed
+
+			#check if health has drpped to zero
+			if self.health <= 0:
+				target.money += 100
+				target.score += 100
+				self.update_action(2) #death
+				self.alive = False
+				print(target.money)
+
+        	
 
 		self.update_animation()
 
 		#draw image on screen
-		surface.blit(self.image, self.rect)
+		pygame.draw.rect(surface, (255, 255, 255), self.rect, 1)
+		surface.blit(self.image, (self.rect.x - 10, self.rect.y - 15))
 
 
 	def update_animation(self):
@@ -39,4 +71,16 @@ class Enemy(pygame.sprite.Sprite):
 			self.frame_index += 1
         #if the animation has run out then reset back to the start
 		if self.frame_index >= len(self.animation_list[self.action]):
-			self.frame_index = 0
+			if self.action == 2:
+				self.frame_index = len(self.animation_list[self.action]) - 1
+			else:
+				self.frame_index = 0
+
+
+	def update_action(self, new_action):
+			#check if the new actino is different to the previous one
+			if new_action != self.action:
+				self.action = new_action
+				#update the animation settings
+				self.frame_index = 0
+				self.update_date = pygame.time.get_ticks()
