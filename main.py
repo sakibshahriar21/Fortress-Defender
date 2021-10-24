@@ -1,8 +1,7 @@
 #import libraries
 import pygame
 import math
-
-from pygame import image
+import random
 from enemy import Enemy
 
 #initialize pygame
@@ -19,6 +18,14 @@ pygame.display.set_caption("Fortess Defender")
 clock = pygame.time.Clock()
 FPS = 60
 
+#define game variables
+level = 1
+level_difficulty = 0
+target_difficulty = 1000
+#MAX_ENEMIES = 10 #10 enemies/level
+ENEMY_TIMER = 1000
+last_enemy = pygame.time.get_ticks()
+enemies_alive = 0
 
 #load images
 bg = pygame.image.load('img/bg.png').convert_alpha()
@@ -36,8 +43,8 @@ bullet_img = pygame.transform.scale(bullet_img, (int(b_w * 0.075), int(b_h * 0.0
 
 #load enemies
 enemy_animations = []
-enemy_types = ['knight']
-enemy_health = [75]
+enemy_types = ['knight', 'goblin', 'purple_goblin', 'red_goblin']
+enemy_health = [75, 100, 125, 150]
 
 animation_types = ['walk', 'attack', 'death']
 for enemy in enemy_types:
@@ -163,9 +170,6 @@ crosshair = Crosshair(0.025)
 bullet_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 
-#create enemies
-enemy_1 = Enemy(enemy_health[0], enemy_animations[0], 200, SCREEN_HEIGHT - 100, 1)
-enemy_group.add(enemy_1)
 
 #game loop
 run = True
@@ -190,6 +194,20 @@ while run:
     #draw enemies
     enemy_group.update(screen, castle, bullet_group)
 
+    #create enemies
+    #check if max number of enemies has been reached 
+    if level_difficulty < target_difficulty:
+        if pygame.time.get_ticks() - last_enemy > ENEMY_TIMER:
+            e = random.randint(0, len(enemy_types) -1)
+            enemy = Enemy(enemy_health[e], enemy_animations[e], -100, SCREEN_HEIGHT - 100, 1)
+            enemy_group.add(enemy)
+            #reset enemy timer
+            last_enemy = pygame.time.get_ticks()
+            #increase level difficulty by enemy health
+            level_difficulty += enemy_health[e]
+            print("Level Difficulty: ",level_difficulty)
+        
+    
     #event handler 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
