@@ -22,10 +22,20 @@ FPS = 60
 level = 1
 level_difficulty = 0
 target_difficulty = 1000
+DIFFICULTY_MULTIPLIER = 1.1
+game_over = False
+next_level = False
 #MAX_ENEMIES = 10 #10 enemies/level
 ENEMY_TIMER = 1000
 last_enemy = pygame.time.get_ticks()
 enemies_alive = 0
+
+#define colors
+WHITE = (255, 255, 255)
+
+#define font
+font = pygame.font.SysFont('Futura', 30)
+font_60 = pygame.font.SysFont('Futura', 60)
 
 #load images
 bg = pygame.image.load('img/bg.png').convert_alpha()
@@ -64,8 +74,13 @@ for enemy in enemy_types:
         animation_list.append(temp_list)
     enemy_animations.append(animation_list)    
 
-#define colors
-WHITE = (255, 255, 255)
+
+
+#function for outputting text onto the screen
+def draw_text(text, font, text_col, x, y):
+    img = font.render(text, True, text_col)
+    screen.blit(img, (x, y))
+
 
 #castle class
 class Castle():
@@ -205,9 +220,36 @@ while run:
             last_enemy = pygame.time.get_ticks()
             #increase level difficulty by enemy health
             level_difficulty += enemy_health[e]
-            print("Level Difficulty: ",level_difficulty)
+            #print("Level Difficulty: ",level_difficulty)
+
+
+    #check if all the enemies have been spwaned
+    if level_difficulty >= target_difficulty:
+        #check how many are still alive
+        enemies_alive = 0
+        for e in enemy_group:
+            if e.alive == True:
+                enemies_alive +=1
+        #print(enemies_alive) 
+
+        #if there are none alive the level is complete    
+        if enemies_alive == 0 and next_level == False:
+            next_level = True
+            level_reset_time = pygame.time.get_ticks()      
         
-    
+    #move onto next level
+    if next_level == True:
+        draw_text('LEVEL COMPLETE!', font_60, WHITE, 200, 300)
+        
+        if pygame.time.get_ticks() - level_reset_time > 1500: #this will give 1.5sec delay after completing each level
+            next_level = False
+            level += 1
+            last_enemy = pygame.time.get_ticks()
+            target_difficulty *= DIFFICULTY_MULTIPLIER
+            level_difficulty = 0
+            enemy_group.empty()
+
+
     #event handler 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
