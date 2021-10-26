@@ -1,8 +1,10 @@
 #import libraries
+from typing import cast
 import pygame
 import math
 import random
 from enemy import Enemy
+import button
 
 #initialize pygame
 pygame.init()
@@ -20,6 +22,7 @@ FPS = 60
 
 #define game variables
 level = 1
+high_score = 0
 level_difficulty = 0
 target_difficulty = 1000
 DIFFICULTY_MULTIPLIER = 1.1
@@ -32,6 +35,7 @@ enemies_alive = 0
 
 #define colors
 WHITE = (255, 255, 255)
+GREY = (100, 100, 100)
 
 #define font
 font = pygame.font.SysFont('Futura', 30)
@@ -74,13 +78,27 @@ for enemy in enemy_types:
         animation_list.append(temp_list)
     enemy_animations.append(animation_list)    
 
-
+#button_image 
+#repair_image
+repair_img = pygame.image.load('img/repair.png').convert_alpha()
+#armour image
+armour_img = pygame.image.load('img/armour.png').convert_alpha()
 
 #function for outputting text onto the screen
 def draw_text(text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     screen.blit(img, (x, y))
 
+
+#function for displaying status    
+def show_info():
+    draw_text('Money: ' + str(castle.money), font, GREY, 10, 10)
+    draw_text('Score: ' + str(castle.score), font, GREY, 180, 10)
+    draw_text('High Score: ' + str(high_score), font, GREY, 180, 30)
+    draw_text('Level: ' + str(level), font, GREY, SCREEN_WIDTH // 2, 10)
+    draw_text('Health: ' + str(castle.health) + " / " + str(castle.max_health), font, GREY, SCREEN_WIDTH - 230, SCREEN_HEIGHT - 50)
+    draw_text('1000', font, GREY, SCREEN_WIDTH - 220, 70) #repair cost
+    draw_text('500', font, GREY, SCREEN_WIDTH - 70, 70) #armour cost
 
 #castle class
 class Castle():
@@ -110,7 +128,7 @@ class Castle():
         self.angle = math.degrees(math.atan2(y_dist, x_dist)) #converting radians to degrees
         #print(self.angle)
         #get mouse click
-        if pygame.mouse.get_pressed()[0] and self.fired == False:
+        if pygame.mouse.get_pressed()[0] and self.fired == False and pos[1] > 70:
             self.fired = True
             bullet = Bullet(bullet_img, self.rect.midleft[0], self.rect.midleft[1], self.angle)
             bullet_group.add(bullet)
@@ -131,6 +149,18 @@ class Castle():
 
         screen.blit(self.image, self.rect)  
 
+    def repair(self):
+        if self.money >= 1000 and self.health < self.max_health:
+            self.health += 500 #fixing castle health by adding more health
+            self.money -= 1000
+            if castle.health > castle.max_health:
+                castle.health = castle.max_health
+   
+    def armour(self):
+        if self.money >= 500 :
+            self.max_health += 250 #permanent health upgrade
+            self.money -= 500
+            
 
 #bullet class
 class Bullet(pygame.sprite.Sprite):
@@ -181,6 +211,10 @@ castle = Castle(castle_image_100, castle_image_50, castle_image_25, SCREEN_WIDTH
 #create crosshair
 crosshair = Crosshair(0.025)
 
+#create buttons
+repair_button = button.Button(SCREEN_WIDTH - 220, 10, repair_img, 0.5)
+armour_button = button.Button(SCREEN_WIDTH - 75, 10, armour_img, 1.25)
+
 #create groups
 bullet_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
@@ -208,6 +242,15 @@ while run:
 
     #draw enemies
     enemy_group.update(screen, castle, bullet_group)
+
+    #show details
+    show_info()
+
+    #draw buttons
+    if repair_button.draw(screen):
+        castle.repair()
+    if armour_button.draw(screen):
+        castle.armour()
 
     #create enemies
     #check if max number of enemies has been reached 
