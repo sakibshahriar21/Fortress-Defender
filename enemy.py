@@ -56,7 +56,7 @@ class Enemy(pygame.sprite.Sprite):
 				target.score += 100
 				self.update_action(2) #death
 				self.alive = False
-				print(target.money)
+				#print(target.money)
 
         	
 
