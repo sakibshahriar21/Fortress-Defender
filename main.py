@@ -2,6 +2,7 @@
 import pygame
 import math
 import random
+import os
 from enemy import Enemy
 import button
 
@@ -24,7 +25,7 @@ level = 1
 high_score = 0
 level_difficulty = 0
 target_difficulty = 1000
-DIFFICULTY_MULTIPLIER = 1.1
+DIFFICULTY_MULTIPLIER = 1.2
 game_over = False
 next_level = False
 #MAX_ENEMIES = 10 #10 enemies/level
@@ -39,6 +40,11 @@ tower_positions = [
     [SCREEN_WIDTH - 150, SCREEN_HEIGHT - 150],
     [SCREEN_WIDTH - 100, SCREEN_HEIGHT - 150]
 ]
+
+#load high score
+if os.path.exists('score.txt'):
+    with open('score.txt', 'r') as file:
+        high_score = int(file.read()) #convert str to int and assign to high_ score variable
 
 #define colors
 WHITE = (255, 255, 255)
@@ -119,7 +125,7 @@ class Castle():
         self.health = 1000
         self.max_health = self.health
         self.fired = False
-        self.money = 25000
+        self.money = 0
         self.score = 0
 
         width = image100.get_width()
@@ -295,90 +301,122 @@ while run:
 
     clock.tick(FPS)
 
-    screen.blit(bg, (0, 0)) 
+    if game_over == False:   
+        screen.blit(bg, (0, 0)) 
 
-    #draw castle
-    castle.draw()
-    castle.shoot()
+        #draw castle
+        castle.draw()
+        castle.shoot()
 
-    #draw tower
-    tower_group.draw(screen)
-    tower_group.update(enemy_group)
+        #draw tower
+        tower_group.draw(screen)
+        tower_group.update(enemy_group)
 
-    #draw crosshair
-    crosshair.draw()
+        #draw crosshair
+        crosshair.draw()
 
-    #draw bullets
-    bullet_group.update()
-    bullet_group.draw(screen)
-    #print(len(bullet_group))
+        #draw bullets
+        bullet_group.update()
+        bullet_group.draw(screen)
+        #print(len(bullet_group))
 
-    #draw enemies
-    enemy_group.update(screen, castle, bullet_group)
+        #draw enemies
+        enemy_group.update(screen, castle, bullet_group)
 
-    #show details
-    show_info()
+        #show details
+        show_info()
 
-    #draw buttons
-    if repair_button.draw(screen):
-        castle.repair()
-    if tower_button.draw(screen):
-        #check if there is enough money and build a tower
-        if castle.money >= TOWER_COST and len(tower_group) < max_towers:
-            tower = Tower(
-                tower_image_100,
-                tower_image_50,
-                tower_image_25, 
-                tower_positions[len(tower_group)][0],
-                tower_positions[len(tower_group)][1],
-                0.2
-                )
-            tower_group.add(tower)
-            #subtract money
-            castle.money -= TOWER_COST
+        #draw buttons
+        if repair_button.draw(screen):
+            castle.repair()
+        if tower_button.draw(screen):
+            #check if there is enough money and build a tower
+            if castle.money >= TOWER_COST and len(tower_group) < max_towers:
+                tower = Tower(
+                    tower_image_100,
+                    tower_image_50,
+                    tower_image_25, 
+                    tower_positions[len(tower_group)][0],
+                    tower_positions[len(tower_group)][1],
+                    0.2
+                    )
+                tower_group.add(tower)
+                #subtract money
+                castle.money -= TOWER_COST
 
-    if armour_button.draw(screen):
-        castle.armour()
+        if armour_button.draw(screen):
+            castle.armour()
 
-    #create enemies
-    #check if max number of enemies has been reached 
-    if level_difficulty < target_difficulty:
-        if pygame.time.get_ticks() - last_enemy > ENEMY_TIMER:
-            e = random.randint(0, len(enemy_types) -1)
-            enemy = Enemy(enemy_health[e], enemy_animations[e], -100, SCREEN_HEIGHT - 100, 1)
-            enemy_group.add(enemy)
-            #reset enemy timer
-            last_enemy = pygame.time.get_ticks()
-            #increase level difficulty by enemy health
-            level_difficulty += enemy_health[e]
-            #print("Level Difficulty: ",level_difficulty)
+        #create enemies
+        #check if max number of enemies has been reached 
+        if level_difficulty < target_difficulty:
+            if pygame.time.get_ticks() - last_enemy > ENEMY_TIMER:
+                e = random.randint(0, len(enemy_types) -1)
+                enemy = Enemy(enemy_health[e], enemy_animations[e], -100, SCREEN_HEIGHT - 100, 1)
+                enemy_group.add(enemy)
+                #reset enemy timer
+                last_enemy = pygame.time.get_ticks()
+                #increase level difficulty by enemy health
+                level_difficulty += enemy_health[e]
+                #print("Level Difficulty: ",level_difficulty)
 
 
-    #check if all the enemies have been spwaned
-    if level_difficulty >= target_difficulty:
-        #check how many are still alive
-        enemies_alive = 0
-        for e in enemy_group:
-            if e.alive == True:
-                enemies_alive +=1
-        #print(enemies_alive) 
+        #check if all the enemies have been spwaned
+        if level_difficulty >= target_difficulty:
+            #check how many are still alive
+            enemies_alive = 0
+            for e in enemy_group:
+                if e.alive == True:
+                    enemies_alive +=1
+            #print(enemies_alive) 
 
-        #if there are none alive the level is complete    
-        if enemies_alive == 0 and next_level == False:
-            next_level = True
-            level_reset_time = pygame.time.get_ticks()      
-        
-    #move onto next level
-    if next_level == True:
-        draw_text('LEVEL COMPLETE!', font_60, WHITE, 200, 300)
-        
-        if pygame.time.get_ticks() - level_reset_time > 1500: #this will give 1.5sec delay after completing each level
-            next_level = False
-            level += 1
-            last_enemy = pygame.time.get_ticks()
-            target_difficulty *= DIFFICULTY_MULTIPLIER
+            #if there are none alive the level is complete    
+            if enemies_alive == 0 and next_level == False:
+                next_level = True
+                level_reset_time = pygame.time.get_ticks()      
+            
+        #move onto next level
+        if next_level == True:
+            draw_text('LEVEL COMPLETE!', font_60, WHITE, 200, 300)
+
+            #update high score
+            if castle.score > high_score:
+                high_score = castle.score
+                with open('score.txt', 'w') as file:
+                    file.write(str(high_score))
+
+            if pygame.time.get_ticks() - level_reset_time > 1500: #this will give 1.5sec delay after completing each level
+                next_level = False
+                level += 1
+                last_enemy = pygame.time.get_ticks()
+                target_difficulty *= DIFFICULTY_MULTIPLIER
+                level_difficulty = 0
+                enemy_group.empty()
+
+        #check game over
+        if castle.health <= 0:
+            game_over = True
+
+    else:
+        draw_text('GAME OVER!', font, WHITE, 300, 300)
+        draw_text('PRESS "SPACE" TO PLAY AGAIN', font, WHITE, 200, 360)
+        pygame.mouse.set_visible(True)   
+        key = pygame.key.get_pressed()
+        if key[pygame.K_SPACE]:
+            #print('game restart') 
+            #reset variable
+            game_over = False
+            level = 1
+            target_difficulty = 1000
             level_difficulty = 0
+            last_enemy = pygame.time.get_ticks()
             enemy_group.empty()
+            tower_group.empty()
+            castle.score = 0
+            castle.health = 1000
+            castle.max_health = castle.health
+            castle.money = 0
+            pygame.mouse.set_visible(False)  
 
 
     #event handler 
